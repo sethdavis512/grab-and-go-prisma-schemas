@@ -1,6 +1,6 @@
-# Docusaurus 2
+# Grab & Go Prisma Schemas
 
-This directory is a brief example of a [Docusaurus](https://v2.docusaurus.io) site that can be deployed to Vercel with zero configuration.
+A collection of Prisma schemas ready to use!
 
 ## Deploy Your Own
 
