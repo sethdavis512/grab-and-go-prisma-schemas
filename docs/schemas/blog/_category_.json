@@ -1,0 +1,7 @@
+{
+    "label": "Blog",
+    "link": {
+        "type": "generated-index",
+        "description": "A collection of blog schemas"
+    }
+}

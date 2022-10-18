@@ -1,0 +1,7 @@
+{
+    "label": "CRM",
+    "link": {
+        "type": "generated-index",
+        "description": "A collection of customer relation management schemas"
+    }
+}
