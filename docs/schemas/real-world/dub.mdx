@@ -1,0 +1,119 @@
+# Dub App
+
+An open-source link shortener with built-in analytics + free custom domains.
+
+[GitHub Repo](https://github.com/steven-tey/dub)
+
+## Schema
+
+```prisma
+datasource db {
+  provider             = "mysql"
+  url                  = env("DATABASE_URL")
+  referentialIntegrity = "prisma"
+}
+
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["referentialIntegrity"]
+}
+
+model User {
+  id                    String    @id @default(cuid())
+  name                  String?
+  email                 String?   @unique
+  emailVerified         DateTime?
+  image                 String?
+  stripeId              String?   @unique // Stripe customer ID
+  usage                 Int       @default(0)
+  usageLimit            Int       @default(1000)
+  billingCycleStart     Int?      // day of the month when the billing cycle starts
+  accounts              Account[]
+  sessions              Session[]
+  projects              ProjectUsers[]
+  sentEmails            SentEmail[]
+  createdAt             DateTime  @default(now())
+}
+
+model Account {
+  id                 String  @id @default(cuid())
+  userId             String
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String?  @db.Text
+  access_token       String?  @db.Text
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String?  @db.Text
+  session_state      String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Project {
+  id                          String   @id @default(cuid())
+  name                        String
+  slug                        String   @unique
+  logo                        String?
+  domain                      String   @unique
+  domainVerified              Boolean  @default(false)
+  createdAt                   DateTime @default(now())
+  updatedAt                   DateTime @updatedAt
+  users                       ProjectUsers[]
+  domainLastChecked           DateTime @default(now())
+  usage                       Int      @default(0)
+  ownerUsageLimit             Int      @default(1000)
+  ownerExceededUsage          Boolean  @default(false)
+  sentEmails                  SentEmail[]
+}
+
+model ProjectUsers {
+  id        String   @id @default(cuid())
+  role      String   @default("member")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId String
+
+  @@unique([userId, projectId])
+}
+
+enum EmailType {
+  firstDomainInvalidEmail
+  secondDomainInvalidEmail
+  firstUsageLimitEmail
+  secondUsageLimitEmail
+}
+
+model SentEmail {
+  id        String   @id @default(cuid())
+  type      EmailType
+  createdAt DateTime @default(now())
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String?
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId String?
+}
+```
