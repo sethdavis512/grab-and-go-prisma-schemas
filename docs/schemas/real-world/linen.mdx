@@ -1,0 +1,318 @@
+# Linen App
+
+Open source community chat platform
+
+[GitHub Repo](https://github.com/Linen-dev/linen.dev)
+
+## Schema
+
+```prisma
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["fullTextSearch", "interactiveTransactions", "extendedIndexes"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model messages {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  body      String
+  sentAt    DateTime
+
+  channel           channels @relation(fields: [channelId], references: [id])
+  channelId         String
+  externalMessageId String?
+
+  threads threads? @relation(fields: [threadId], references: [id])
+
+  threadId String?
+
+  mentions                 mentions[]
+  attachments              messageAttachments[]
+  reactions                messageReactions[]
+  author                   users?                   @relation(fields: [usersId], references: [id])
+  usersId                  String?
+  textsearchable_index_col Unsupported("tsvector")?
+  blocks                   Json?
+  messageFormat            MessageFormat?
+
+  @@unique([channelId, externalMessageId])
+  @@index([textsearchable_index_col], type: Gin)
+  @@index([threadId])
+  @@index([usersId])
+}
+
+enum MessageFormat {
+  DISCORD
+  SLACK
+  LINEN
+}
+
+model threads {
+  id               String      @id @default(uuid())
+  incrementId      Int         @default(autoincrement())
+  channel          channels    @relation(fields: [channelId], references: [id])
+  externalThreadId String?
+  viewCount        Int         @default(0)
+  slug             String?
+  messageCount     Int         @default(1)
+  sentAt           BigInt
+  hidden           Boolean     @default(false)
+  title            String?
+  state            ThreadState @default(OPEN)
+  pinned           Boolean     @default(false)
+  messages         messages[]
+  channelId        String
+  lastReplyAt      BigInt?
+
+  @@unique([externalThreadId])
+  @@unique([incrementId])
+  @@index([channelId])
+  @@index([channelId, sentAt])
+  @@index([channelId, sentAt, hidden])
+  @@index([channelId, hidden, state, lastReplyAt])
+}
+
+enum ThreadState {
+  OPEN
+  CLOSE
+}
+
+model channels {
+  id                String     @id @default(uuid())
+  channelName       String
+  messages          messages[]
+  externalChannelId String?
+
+  threads            threads[]
+  //We should make channel required for channel
+  account            accounts?     @relation(fields: [accountId], references: [id])
+  accountId          String?
+  hidden             Boolean       @default(false)
+  default            Boolean       @default(false)
+  externalPageCursor String?
+  memberships        memberships[]
+
+  @@unique([externalChannelId])
+  @@index([accountId])
+}
+
+model accounts {
+  id                     String      @id @default(uuid())
+  createdAt              DateTime    @default(now())
+  type                   AccountType @default(PUBLIC)
+  name                   String?
+  slackDomain            String?
+  discordDomain          String?
+  discordServerId        String?
+  channels               channels[]
+  slackTeamId            String?
+  communityInviteUrl     String?
+  redirectDomain         String?
+  communityUrl           String?
+  syncStatus             String      @default("NOT_STARTED")
+  brandColor             String?
+  homeUrl                String?
+  docsUrl                String?
+  logoUrl                String?
+  premium                Boolean     @default(false)
+  googleAnalyticsId      String?
+  googleSiteVerification String?
+  anonymizeUsers         Boolean     @default(false)
+
+  auths                 auths[]
+  users                 users[]
+  slackAuthorizations   slackAuthorizations[]
+  discordAuthorizations discordAuthorizations[]
+  invites               invites[]
+  chat                  ChatType                @default(MANAGERS)
+  integration           AccountIntegration      @default(NONE)
+
+  @@unique([redirectDomain])
+  @@unique([slackDomain])
+}
+
+enum AccountType {
+  PUBLIC
+  PRIVATE
+}
+
+enum AccountIntegration {
+  NONE
+  SLACK
+  DISCORD
+}
+
+enum ChatType {
+  NONE
+  MANAGERS
+  MEMBERS
+}
+
+model auths {
+  id            String    @id @default(uuid())
+  createdAt     DateTime  @default(now())
+  email         String
+  emailVerified DateTime?
+  password      String
+  salt          String
+  token         String?
+
+  account   accounts? @relation(fields: [accountId], references: [id])
+  accountId String?
+  users     users[]
+  session   session[]
+
+  @@unique([email])
+}
+
+model memberships {
+  user    users    @relation(fields: [usersId], references: [id])
+  channel channels @relation(fields: [channelsId], references: [id])
+
+  usersId    String
+  channelsId String
+
+  @@unique([usersId, channelsId])
+  @@index([usersId])
+  @@index([channelsId])
+}
+
+model users {
+  id              String     @id @default(uuid())
+  messages        messages[]
+  externalUserId  String?
+  displayName     String?
+  profileImageUrl String?
+  isBot           Boolean
+  isAdmin         Boolean
+  mentions        mentions[]
+  anonymousAlias  String?
+
+  account    accounts @relation(fields: [accountsId], references: [id])
+  accountsId String
+
+  auth        auths?        @relation(fields: [authsId], references: [id])
+  authsId     String?
+  memberships memberships[]
+  invites     invites[]
+  role        Roles         @default(MEMBER)
+
+  @@unique([externalUserId, accountsId])
+  @@index([authsId])
+}
+
+enum Roles {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+model mentions {
+  messages   messages? @relation(fields: [messagesId], references: [id])
+  messagesId String
+  users      users?    @relation(fields: [usersId], references: [id])
+  usersId    String
+
+  @@id([messagesId, usersId])
+  @@index([messagesId])
+  @@index([usersId])
+}
+
+model messageAttachments {
+  id          String?   @default(uuid())
+  messages    messages? @relation(fields: [messagesId], references: [id], onDelete: Cascade)
+  messagesId  String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  //We need to change this to generate it's own id
+  externalId  String
+  name        String
+  sourceUrl   String
+  title       String?
+  mimetype    String?
+  internalUrl String?
+  permalink   String?
+
+  @@id([messagesId, externalId])
+  @@index([messagesId])
+}
+
+model messageReactions {
+  messages   messages? @relation(fields: [messagesId], references: [id], onDelete: Cascade)
+  //We need to generate our own id here
+  messagesId String
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  name       String
+  count      Int?
+  users      Json?
+
+  @@id([messagesId, name])
+  @@index([messagesId])
+}
+
+model slackAuthorizations {
+  id              String   @id @default(uuid())
+  createdAt       DateTime @default(now())
+  accessToken     String
+  botUserId       String
+  scope           String
+  userScope       String?
+  authedUserId    String?
+  userAccessToken String?
+
+  account    accounts? @relation(fields: [accountsId], references: [id])
+  accountsId String?
+}
+
+model discordAuthorizations {
+  id           String   @id @default(uuid())
+  createdAt    DateTime @default(now())
+  accessToken  String
+  scope        String
+  refreshToken String
+  expiresAt    DateTime
+
+  account accounts? @relation(fields: [accountsId], references: [id])
+
+  accountsId String?
+}
+
+model verificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         auths    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model invites {
+  id         String    @id @default(uuid())
+  email      String
+  accountsId String
+  status     String    @default("PENDING")
+  accounts   accounts? @relation(fields: [accountsId], references: [id])
+
+  createdById String
+  createdBy   users? @relation(fields: [createdById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  role      Roles    @default(MEMBER)
+
+  @@unique([email, accountsId])
+}
+```
