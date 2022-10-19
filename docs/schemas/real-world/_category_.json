@@ -1,0 +1,7 @@
+{
+    "label": "Real world",
+    "link": {
+        "type": "generated-index",
+        "description": "A collection of real world, production-ready apps"
+    }
+}
