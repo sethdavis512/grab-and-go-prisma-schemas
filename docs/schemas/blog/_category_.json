@@ -1,5 +1,6 @@
 {
     "label": "Blog",
+    "collapsed": false,
     "link": {
         "type": "generated-index",
         "description": "A collection of blog schemas"

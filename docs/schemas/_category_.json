@@ -1,5 +1,6 @@
 {
     "label": "Schemas",
+    "collapsed": false,
     "link": {
         "type": "generated-index",
         "description": "A collection of Prisma.js schemas"

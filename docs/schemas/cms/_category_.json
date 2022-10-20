@@ -1,5 +1,6 @@
 {
     "label": "CMS",
+    "collapsed": false,
     "link": {
         "type": "generated-index",
         "description": "A collection of content management system schemas"
