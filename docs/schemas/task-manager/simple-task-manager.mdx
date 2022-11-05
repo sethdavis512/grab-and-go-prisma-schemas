@@ -1,0 +1,34 @@
+# Simple task manager
+
+[Source](https://github.com/keystonejs/keystone/blob/main/examples/task-manager/schema.prisma)
+
+```prisma
+datasource sqlite {
+  url               = env("DATABASE_URL")
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
+  provider          = "sqlite"
+}
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "node_modules/.prisma/client"
+}
+
+model Task {
+  id           String    @id @default(cuid())
+  label        String    @default("")
+  priority     String?
+  isComplete   Boolean   @default(false)
+  assignedTo   Person?   @relation("Task_assignedTo", fields: [assignedToId], references: [id])
+  assignedToId String?   @map("assignedTo")
+  finishBy     DateTime?
+
+  @@index([assignedToId])
+}
+
+model Person {
+  id    String @id @default(cuid())
+  name  String @unique @default("")
+  tasks Task[] @relation("Task_assignedTo")
+}
+```
