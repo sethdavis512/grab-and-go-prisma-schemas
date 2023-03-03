@@ -1,0 +1,71 @@
+# Kudos web app
+
+From [Sabin Adam's](https://twitter.com/sabinthedev) ["Build A Fullstack App with Remix, Prisma & MongoDB" tutorial](https://www.prisma.io/blog/fullstack-remix-prisma-mongodb-1-7D0BfTXBmB6r)
+
+```prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  email     String   @unique
+  password  String
+
+  authoredKudos Kudo[]  @relation("AuthoredKudos")
+  kudos         Kudo[]  @relation("RecievedKudos")
+  profile       Profile
+}
+
+model Kudo {
+  id          String     @id @default(auto()) @map("_id") @db.ObjectId
+  message     String
+  createdAt   DateTime   @default(now())
+  style       KudoStyle?
+  author      User       @relation(references: [id], fields: [authorId], onDelete: Cascade, "AuthoredKudos")
+  authorId    String     @db.ObjectId
+  recipient   User       @relation(references: [id], fields: [recipientId], "RecievedKudos")
+  recipientId String     @db.ObjectId
+}
+
+type Profile {
+  firstName      String
+  lastName       String
+  department     Department? @default(MARKETING)
+  profilePicture String?
+}
+
+type KudoStyle {
+  backgroundColor Color @default(YELLOW)
+  textColor       Color @default(WHITE)
+  emoji           Emoji @default(THUMBSUP)
+}
+
+enum Emoji {
+  THUMBSUP
+  PARTY
+  HANDSUP
+}
+
+enum Department {
+  MARKETING
+  SALES
+  ENGINEERING
+  HR
+}
+
+enum Color {
+  RED
+  GREEN
+  YELLOW
+  BLUE
+  WHITE
+}
+```

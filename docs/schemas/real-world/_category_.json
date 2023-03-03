@@ -1,6 +1,6 @@
 {
     "label": "Real world",
-    "collapsed": false,
+    "collapsed": true,
     "link": {
         "type": "generated-index",
         "description": "A collection of real world, production-ready apps"

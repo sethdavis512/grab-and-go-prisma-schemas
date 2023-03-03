@@ -1,6 +1,6 @@
 {
     "label": "Task manager",
-    "collapsed": false,
+    "collapsed": true,
     "link": {
         "type": "generated-index",
         "description": "A collection of task manager schemas"
