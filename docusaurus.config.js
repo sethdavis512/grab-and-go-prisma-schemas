@@ -8,7 +8,7 @@ const darkCodeTheme = require('prism-react-renderer/themes/dracula');
 const config = {
     title: 'Grab & Go Prisma Schemas',
     tagline: 'Get your schemas here!',
-    url: 'https://grab-and-go-prisma-schemas.vercel.app/',
+    url: 'https://grab-and-go-prisma-schemas.netlify.app/',
     baseUrl: '/',
     onBrokenLinks: 'throw',
     onBrokenMarkdownLinks: 'warn',
